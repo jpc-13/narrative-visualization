@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scene 1</title>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body onload="init()" style="background-color: #f5f5f5; font-family: sans-serif;">
+    <div style="height: 100px; padding: 20px; text-align: center;">
+        <h1>Wealth and Health Across the World</h1>
+        <h3>An interactive slideshow exploring how wealth relates to well-being</h3>
+    </div>
+    <div id="tooltip" style="opacity:0; position:absolute; border:1px solid black; background:white; padding: 3px"></div>
+    <div style="display: flex; justify-content: center;">
+        <svg width="750" height="500"></svg>
+    </div>
+    <div style="height: 150px; padding: 20px; text-align: center;">
+        <p>This chart shows the relationship between GDP per capita and life expectancy.</p>
+        <p>Hover over data points to see the exact life expectancy, GDP per capita, and country.</p>
+        <p>We can see that higher GDP (Gross Domestic Product) tends to correlate with longer life expectancy. The top 20 countries all have life expectancies exceeding 75 years. Also, all countries with life expectancies less than 60 years have GDP per capita less than $10,000.</p>
+        <p>Click 'Next Scene' to explore more measures.</p>
+    </div>
+     <div style="display: flex; justify-content: center;">
+        <button style="
+            padding: 10px;
+            background-color: #327fcc;
+            color: white;
+            border: none;
+            font-size: 12px;
+             width: 120px
+            "onclick="location.href='scene2.html'">Next Scene
+        </button>
+    </div>
+    <script>
+    async function init() {
+        const data = await d3.csv("cleaned_data.csv");
+        const mappedData = data
+            .map(d => ({
+                country: d["Country"],
+                lifeExpectancy: d["Life Expectancy"],
+                gdpPerCapita: d["GDP"] / d["Population"]
+            }))
+
+        const marg = 50;
+        const width = 750 - (2 * marg);
+        const height = 500 - (2 * marg);
+
+        const x = d3.scaleLinear()
+            .domain([0, 120000])
+            .range([0, width]);
+
+        const y = d3.scaleLinear()
+            .domain([50, 90])
+            .range([height, 0]);
+
+        const svg = d3.select("svg")
+            .append("g")
+            .attr("transform", `translate(${marg},${marg})`);
+
+        svg.append("g")
+            .attr("transform", `translate(0,${height})`)
+            .call(d3.axisBottom(x));
+
+        svg.append("g")
+            .call(d3.axisLeft(y));
+
+        const tooltip = d3.select("#tooltip");
+
+        const top20 = mappedData
+            .sort((a, b) => b.gdpPerCapita - a.gdpPerCapita)
+            .slice(0, 20)
+            .map(d => d.country);
+
+        svg.selectAll("circle")
+            .data(mappedData)
+            .enter()
+            .append("circle")
+            .attr("cx", d => x(d.gdpPerCapita))
+            .attr("cy", d => y(d.lifeExpectancy))
+            .attr("r", 6)
+            .attr("fill", d => top20.includes(d.country) ? "green" : "grey")
+            .attr("stroke", "black")
+            .on("mouseover", function(d, i) {
+                tooltip
+                    .style("opacity", 1)
+                    .style("left", (d3.event.pageX + 20) + "px")
+                    .style("top", (d3.event.pageY + 20) + "px")
+                    .html(
+                        `Country: ${d.country}<br/>` +
+                        `GDP per Capita: $${Math.round(d.gdpPerCapita)}<br/>` +
+                        `Life Expectancy: ${d.lifeExpectancy} Years`
+            );
+            })
+            .on("mouseout", function() { tooltip.style("opacity", 0); });
+
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("x", width / 2)
+            .attr("y", height + 40)
+            .text("GDP per Capita ($)");
+
+        svg.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -30)
+            .text("Life Expectancy (Years)");
+
+        svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", -20)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .text("Scene 1 - Life Expectancy vs GDP per Capita in 2023");
+            
+
+        svg.append("text")
+            .attr("x", width)
+            .attr("y", height / 2)
+            .attr("text-anchor", "end")
+            .attr("fill", "green")
+            .style("font-size", "14px")
+            .text("Green - Top 20 countries by GDP per capita");
+
+        svg.append("text")
+            .attr("x", width)
+            .attr("y", height / 2 + 20)
+            .attr("text-anchor", "end")
+            .attr("fill", "green")
+            .style("font-size", "14px")
+            .text("all have life expectancy > 75 years");
+
+
+        svg.append("rect")
+            .attr("x", 0)       
+            .attr("y", height - 100)      
+            .attr("width", 55)
+            .attr("height", 100)
+            .attr("fill", "none")
+            .attr("stroke", "red")
+            .attr("stroke-dasharray", "4");
+        
+         svg.append("text")
+            .attr("x", 55)
+            .attr("y", height - 105)
+            .attr("fill", "red")
+            .style("font-size", "14px")
+            .text("Countries with life expectancy < 60 years all have GDP per capita < $10,000");
+    }
+    </script>
+</body>
+</html>
